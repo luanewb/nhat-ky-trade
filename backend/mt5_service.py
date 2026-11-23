@@ -1,5 +1,6 @@
 import math
 import random
+import time
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -35,8 +36,64 @@ MT5_TF_MAP = (
 )
 
 
+def _nth_sunday(year: int, month: int, n: int) -> datetime:
+    """Return the nth Sunday (1-indexed) of given month in UTC."""
+    d = datetime(year, month, 1, tzinfo=timezone.utc)
+    days_until_sun = (6 - d.weekday()) % 7
+    return d + timedelta(days=days_until_sun + (n - 1) * 7)
+
+
+def _is_us_dst(dt_utc: datetime) -> bool:
+    """Most Forex/CFD MT5 servers (FTMO, IC Markets, etc.) follow US DST: UTC+3 in DST, UTC+2 in winter."""
+    y = dt_utc.year
+    dst_start = _nth_sunday(y, 3, 2).replace(hour=2)
+    dst_end = _nth_sunday(y, 11, 1).replace(hour=2)
+    return dst_start <= dt_utc < dst_end
+
+
+def detect_broker_offset_hours() -> int:
+    """Detect current MT5 broker server UTC offset in hours by comparing latest tick time with UTC now."""
+    if mt5 is None:
+        return 2
+    try:
+        now_utc = int(time.time())
+        for sym in ("XAUUSD", "EURUSD", "BTCUSD", "USDJPY", "US30"):
+            tick = mt5.symbol_info_tick(sym)
+            if tick and tick.time > 0 and abs(tick.time - now_utc) < 14 * 3600:
+                return int(round((tick.time - now_utc) / 3600))
+        # Fallback: inspect any visible MarketWatch symbol
+        syms = mt5.symbols_get()
+        if syms:
+            for s in syms[:30]:
+                if getattr(s, "time", 0) > 0 and abs(s.time - now_utc) < 14 * 3600:
+                    return int(round((s.time - now_utc) / 3600))
+    except Exception:
+        pass
+    return 2
+
+
+def broker_ts_to_utc(broker_ts: int, current_offset_hours: int) -> int:
+    """Convert MT5 broker server timestamp to true UTC unix timestamp, handling EET/EEST DST."""
+    approx_dt = datetime.fromtimestamp(broker_ts, tz=timezone.utc)
+    if current_offset_hours in (2, 3):
+        eff_offset = 3 if _is_us_dst(approx_dt) else 2
+    else:
+        eff_offset = current_offset_hours
+    return int(broker_ts - eff_offset * 3600)
+
+
+def utc_ts_to_broker(utc_ts: int, current_offset_hours: int) -> int:
+    """Convert true UTC unix timestamp to MT5 broker server timestamp."""
+    dt = datetime.fromtimestamp(utc_ts, tz=timezone.utc)
+    if current_offset_hours in (2, 3):
+        eff_offset = 3 if _is_us_dst(dt) else 2
+    else:
+        eff_offset = current_offset_hours
+    return int(utc_ts + eff_offset * 3600)
+
+
 def classify_session(unix_ts: int) -> str:
-    """Classify trading session based on UTC hour."""
+    """Classify trading session based on true UTC hour."""
     dt = datetime.fromtimestamp(unix_ts, tz=timezone.utc)
     h = dt.hour
     if 0 <= h < 7:
@@ -101,15 +158,23 @@ def get_mt5_status() -> Dict[str, Any]:
         }
 
 
-def _fetch_mt5_rates(symbol: str, timeframe: str, start_ts: int, end_ts: int) -> List[Dict[str, Any]]:
+def _fetch_mt5_rates(
+    symbol: str,
+    timeframe: str,
+    start_ts_utc: int,
+    end_ts_utc: int,
+    broker_offset_hours: Optional[int] = None,
+) -> List[Dict[str, Any]]:
     if mt5 is None or timeframe not in MT5_TF_MAP:
         return []
     try:
         if not mt5.initialize():
             return []
         mt5.symbol_select(symbol, True)
-        from_dt = datetime.fromtimestamp(start_ts, tz=timezone.utc)
-        to_dt = datetime.fromtimestamp(end_ts, tz=timezone.utc)
+        off = broker_offset_hours if broker_offset_hours is not None else detect_broker_offset_hours()
+        # Query MT5 using broker server clock, then normalize returned candle times back to true UTC
+        from_dt = datetime.fromtimestamp(utc_ts_to_broker(start_ts_utc, off), tz=timezone.utc)
+        to_dt = datetime.fromtimestamp(utc_ts_to_broker(end_ts_utc, off), tz=timezone.utc)
         rates = mt5.copy_rates_range(symbol, MT5_TF_MAP[timeframe], from_dt, to_dt)
         if rates is None or len(rates) == 0:
             return []
@@ -117,7 +182,7 @@ def _fetch_mt5_rates(symbol: str, timeframe: str, start_ts: int, end_ts: int) ->
         for r in rates:
             candles.append(
                 {
-                    "time": int(r["time"]),
+                    "time": broker_ts_to_utc(int(r["time"]), off),
                     "open": float(r["open"]),
                     "high": float(r["high"]),
                     "low": float(r["low"]),
@@ -176,6 +241,7 @@ def sync_mt5_trades(
 
     settings = get_all_settings()
     tz_offset = int(settings.get("timezone_offset_hours", 7))
+    broker_offset = detect_broker_offset_hours()
 
     now_utc = datetime.now(timezone.utc) + timedelta(days=1)
     if date_from:
@@ -247,8 +313,8 @@ def sync_mt5_trades(
 
             entry_price = sum(float(d.price) * float(d.volume) for d in entry_deals) / in_vol
             exit_price = sum(float(d.price) * float(d.volume) for d in exit_deals) / out_vol
-            entry_time = int(first_in.time)
-            exit_time = int(last_out.time)
+            entry_time = broker_ts_to_utc(int(first_in.time), broker_offset)
+            exit_time = broker_ts_to_utc(int(last_out.time), broker_offset)
 
             gross_profit = sum(float(d.profit) for d in p_deals)
             commission = sum(float(d.commission) + float(getattr(d, "fee", 0.0) or 0.0) for d in p_deals)
@@ -266,10 +332,10 @@ def sync_mt5_trades(
             mae_price: Optional[float] = None
 
             if fetch_candles:
-                # Cache 5m candles around trade (-90 bars before, +45 bars after)
+                # Cache 5m candles around trade (-90 bars before, +45 bars after) in true UTC
                 c_start = entry_time - 90 * 300
                 c_end = exit_time + 45 * 300
-                rates_5m = _fetch_mt5_rates(symbol, "5m", c_start, c_end)
+                rates_5m = _fetch_mt5_rates(symbol, "5m", c_start, c_end, broker_offset)
                 if rates_5m:
                     cache_candles(conn, symbol, "5m", rates_5m)
                     candles_cached += len(rates_5m)

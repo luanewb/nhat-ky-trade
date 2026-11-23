@@ -137,6 +137,11 @@ def _extract_positions_from_rows(rows: List[List[Any]], account_label: str) -> L
             direction = "LONG" if raw_type in ("buy", "long") else "SHORT"
             volume = _parse_float(cells[4])
             entry_price = _parse_float(cells[5])
+            if volume <= 0 or entry_price <= 0:
+                continue
+            row_text_lower = " ".join(str(c).lower() for c in cells)
+            if any(w in row_text_lower for w in ("canceled", "cancelled", "rejected", "expired")):
+                continue
             sl_val = _parse_float(cells[6])
             tp_val = _parse_float(cells[7])
             exit_ts = _parse_dt(cells[8]) or entry_ts

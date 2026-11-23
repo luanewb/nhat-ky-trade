@@ -6,6 +6,44 @@ from typing import Any, Dict, List, Optional, Tuple
 from database import get_all_settings, get_conn, serialize_trade
 
 
+def _ts_to_local_date(unix_ts: int, tz_offset_hours: int) -> str:
+    tz = timezone(timedelta(hours=tz_offset_hours))
+    return datetime.fromtimestamp(unix_ts, tz=tz).strftime("%Y-%m-%d")
+
+
+def _count_distinct_entries(trades: List[Dict[str, Any]], split_window_sec: int = 5) -> int:
+    """
+    Count distinct executed trade entries:
+    - Ignores any non-executed / 0-volume rows.
+    - Groups split-TP entries (e.g. ATC 1/3 1R, 3R, Runner) opened on the same symbol & direction
+      within `split_window_sec` seconds as 1 single trade entry.
+    - Breakeven trades are included.
+    """
+    executed = [t for t in trades if float(t.get("volume", 0) or 0) > 0]
+    if not executed:
+        return 0
+    executed.sort(key=lambda x: (x["symbol"], x["direction"], int(x["entry_time"])))
+    count = 0
+    prev_sym = None
+    prev_dir = None
+    group_start = -1
+    for t in executed:
+        ts = int(t["entry_time"])
+        if t["symbol"] == prev_sym and t["direction"] == prev_dir and abs(ts - group_start) <= split_window_sec:
+            continue
+        count += 1
+        prev_sym = t["symbol"]
+        prev_dir = t["direction"]
+        group_start = ts
+    return count
+
+
+def _fmt_neg_usd(val: float) -> str:
+    if val < 0:
+        return f"-${abs(val):,.2f}"
+    return f"${val:,.2f}"
+
+
 def _build_where(
     account: Optional[str] = None,
     symbol: Optional[str] = None,
@@ -45,6 +83,7 @@ def get_calendar_data(
     date_to = f"{year:04d}-{month:02d}-{num_days:02d}"
 
     settings = get_all_settings()
+    tz_offset = int(settings.get("timezone_offset_hours", 7))
     daily_loss_limit = float(settings.get("daily_loss_limit", 500.0))
     max_trades_day = int(settings.get("max_trades_per_day", 8))
 
@@ -69,8 +108,13 @@ def get_calendar_data(
         conn.close()
 
     by_day: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    entries_by_day: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     for t in trades:
+        if float(t.get("volume", 0) or 0) <= 0:
+            continue
         by_day[t["close_date"]].append(t)
+        ed = _ts_to_local_date(t["entry_time"], tz_offset)
+        entries_by_day[ed].append(t)
 
     days_data: Dict[str, Dict[str, Any]] = {}
     monthly_pnl = 0.0
@@ -87,9 +131,10 @@ def get_calendar_data(
 
         violations: List[str] = []
         if daily_loss_limit > 0 and day_pnl <= -daily_loss_limit:
-            violations.append(f"Vượt giới hạn lỗ ngày (-${daily_loss_limit:,.0f})")
-        if max_trades_day > 0 and len(d_trades) > max_trades_day:
-            violations.append(f"Quá số lệnh tối đa ({len(d_trades)}/{max_trades_day})")
+            violations.append(f"Vượt giới hạn lỗ ngày ({_fmt_neg_usd(day_pnl)} / -${daily_loss_limit:,.0f})")
+        distinct_entries = _count_distinct_entries(entries_by_day.get(d_str, []))
+        if max_trades_day > 0 and distinct_entries > max_trades_day:
+            violations.append(f"Vào {distinct_entries} lệnh trong ngày (giới hạn {max_trades_day})")
 
         noted_count = sum(1 for t in d_trades if t["has_journal"])
         days_data[d_str] = {
@@ -314,30 +359,43 @@ def get_analytics(
     by_mistake = sorted(_agg_group(lambda t: t["mistake_tags"]), key=lambda x: x["net_profit"])
     by_emotion = sorted(_agg_group(lambda t: t["emotion_tags"]), key=lambda x: x["net_profit"], reverse=True)
 
-    # Rule Guardian check by day
-    by_day: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    # Rule Guardian check:
+    # - Daily Loss Limit checked by close_date (Vietnam time)
+    # - Max Trades / Day checked by entry_date (Vietnam time), counting distinct executed entries (grouping split TP orders)
+    by_close_day: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    by_entry_day: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     for t in trades:
-        by_day[t["close_date"]].append(t)
+        if float(t.get("volume", 0) or 0) <= 0:
+            continue
+        by_close_day[t["close_date"]].append(t)
+        ed = _ts_to_local_date(t["entry_time"], tz_offset)
+        by_entry_day[ed].append(t)
 
+    all_dates = sorted(set(by_close_day.keys()) | set(by_entry_day.keys()), reverse=True)
     rule_violations: List[Dict[str, Any]] = []
-    for d_str, d_trades in sorted(by_day.items(), reverse=True):
-        day_pnl = round(sum(x["net_profit"] for x in d_trades), 2)
-        if daily_loss_limit > 0 and day_pnl <= -daily_loss_limit:
-            rule_violations.append(
-                {
-                    "date": d_str,
-                    "type": "DAILY_LOSS",
-                    "message": f"Lỗ ngày ${day_pnl:,.2f} vượt mức giới hạn -${daily_loss_limit:,.0f}",
-                }
-            )
-        if max_trades_day > 0 and len(d_trades) > max_trades_day:
-            rule_violations.append(
-                {
-                    "date": d_str,
-                    "type": "OVERTRADING",
-                    "message": f"Vào {len(d_trades)} lệnh trong ngày (giới hạn tối đa {max_trades_day} lệnh)",
-                }
-            )
+    for d_str in all_dates:
+        c_trades = by_close_day.get(d_str, [])
+        if c_trades:
+            day_pnl = round(sum(x["net_profit"] for x in c_trades), 2)
+            if daily_loss_limit > 0 and day_pnl <= -daily_loss_limit:
+                rule_violations.append(
+                    {
+                        "date": d_str,
+                        "type": "DAILY_LOSS",
+                        "message": f"Lỗ ngày {_fmt_neg_usd(day_pnl)} vượt mức giới hạn -${daily_loss_limit:,.0f}",
+                    }
+                )
+        e_trades = by_entry_day.get(d_str, [])
+        if e_trades:
+            distinct_entries = _count_distinct_entries(e_trades)
+            if max_trades_day > 0 and distinct_entries > max_trades_day:
+                rule_violations.append(
+                    {
+                        "date": d_str,
+                        "type": "OVERTRADING",
+                        "message": f"Vào {distinct_entries} lệnh đã khớp trong ngày (giới hạn tối đa {max_trades_day} lệnh)",
+                    }
+                )
 
     return {
         "kpis": {

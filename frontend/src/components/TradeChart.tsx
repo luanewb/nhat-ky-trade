@@ -27,6 +27,12 @@ interface TradeChartProps {
 }
 
 const TIMEFRAMES = ['1m', '5m', '15m', '30m', '1h', '4h', '1D'];
+// Shift Unix UTC timestamps by browser/VN offset (+7h) so lightweight-charts x-axis displays Vietnam time
+const VN_OFFSET_SEC = 7 * 3600;
+
+function toChartTime(utcSec: number): Time {
+  return (utcSec + VN_OFFSET_SEC) as Time;
+}
 
 function findNearestCandleTime(candles: Candle[], targetTs: number): number | null {
   if (!candles.length) return null;
@@ -154,8 +160,8 @@ export function TradeChart({ trade }: TradeChartProps) {
     const activeEndTime =
       exitCandleTime && lastVisibleTime >= exitCandleTime ? exitCandleTime : lastVisibleTime;
 
-    const x1Raw = chart.timeScale().timeToCoordinate(entryCandleTime as Time);
-    const x2Raw = chart.timeScale().timeToCoordinate(activeEndTime as Time);
+    const x1Raw = chart.timeScale().timeToCoordinate(toChartTime(entryCandleTime));
+    const x2Raw = chart.timeScale().timeToCoordinate(toChartTime(activeEndTime));
     if (x1Raw === null && x2Raw === null) return;
 
     const x1 = x1Raw !== null ? Number(x1Raw) : 0;
@@ -375,7 +381,7 @@ export function TradeChart({ trade }: TradeChartProps) {
 
     candleSeries.setData(
       visibleCandles.map((c) => ({
-        time: c.time as Time,
+        time: toChartTime(c.time),
         open: c.open,
         high: c.high,
         low: c.low,
@@ -385,7 +391,7 @@ export function TradeChart({ trade }: TradeChartProps) {
 
     volumeSeries.setData(
       visibleCandles.map((c) => ({
-        time: c.time as Time,
+        time: toChartTime(c.time),
         value: c.volume,
         color: c.close >= c.open ? 'rgba(38, 166, 154, 0.45)' : 'rgba(239, 83, 80, 0.45)',
       })),
@@ -398,7 +404,7 @@ export function TradeChart({ trade }: TradeChartProps) {
     const markers: SeriesMarker<Time>[] = [];
     if (entryCandleTime && lastTs >= entryCandleTime) {
       markers.push({
-        time: entryCandleTime as Time,
+        time: toChartTime(entryCandleTime),
         position: trade.direction === 'LONG' ? 'belowBar' : 'aboveBar',
         color: trade.direction === 'LONG' ? '#22c55e' : '#ef4444',
         shape: trade.direction === 'LONG' ? 'arrowUp' : 'arrowDown',
@@ -407,7 +413,7 @@ export function TradeChart({ trade }: TradeChartProps) {
     }
     if (exitCandleTime && lastTs >= trade.exit_time) {
       markers.push({
-        time: exitCandleTime as Time,
+        time: toChartTime(exitCandleTime),
         position: trade.direction === 'LONG' ? 'aboveBar' : 'belowBar',
         color: '#f59e0b',
         shape: 'circle',
@@ -495,7 +501,8 @@ export function TradeChart({ trade }: TradeChartProps) {
 
     const onCrosshair = (param: { time?: Time }) => {
       if (!param.time) return;
-      const found = visibleCandles.find((c) => c.time === Number(param.time));
+      const utcT = Number(param.time) - VN_OFFSET_SEC;
+      const found = visibleCandles.find((c) => c.time === utcT);
       if (found) setHoverCandle(found);
     };
     chart.subscribeCrosshairMove(onCrosshair);

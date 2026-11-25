@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from './api';
 import { AnalyticsView } from './components/AnalyticsView';
-import { CalendarView } from './components/CalendarView';
+import { DashboardView } from './components/DashboardView';
 import { DayTradesDrawer } from './components/DayTradesDrawer';
 import { Header } from './components/Header';
 import { LessonsView } from './components/LessonsView';
@@ -19,8 +19,8 @@ import type {
 
 export default function App() {
   const now = new Date();
-  const [version, setVersion] = useState('1.0.0');
-  const [activeTab, setActiveTab] = useState<ActiveTab>('calendar');
+  const [version, setVersion] = useState('1.0.2');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
 
@@ -28,7 +28,7 @@ export default function App() {
   const [selectedAccount, setSelectedAccount] = useState('ALL');
   const [selectedSymbol, setSelectedSymbol] = useState('ALL');
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [showWeekly, setShowWeekly] = useState(true);
+  const [showWeekly, setShowWeekly] = useState(false);
 
   const [mt5Status, setMt5Status] = useState<MT5Status | null>(null);
   const [calendarData, setCalendarData] = useState<CalendarResponse | null>(null);
@@ -62,7 +62,6 @@ export default function App() {
       setFilters(f);
       setMt5Status(st);
       setSettings(cfg);
-      setShowWeekly(cfg.show_weekly_column ?? true);
     } catch {
       // ignore initial error
     }
@@ -97,7 +96,7 @@ export default function App() {
   }, [loadCalendar]);
 
   useEffect(() => {
-    if (activeTab === 'analytics') {
+    if (activeTab === 'dashboard' || activeTab === 'analytics') {
       loadAnalytics();
     }
   }, [activeTab, loadAnalytics]);
@@ -118,8 +117,8 @@ export default function App() {
   const refreshAll = useCallback(() => {
     loadMeta();
     loadCalendar();
-    if (activeTab === 'analytics') loadAnalytics();
-  }, [loadMeta, loadCalendar, loadAnalytics, activeTab]);
+    loadAnalytics();
+  }, [loadMeta, loadCalendar, loadAnalytics]);
 
   const handleQuickSync = async () => {
     setSyncing(true);
@@ -171,10 +170,16 @@ export default function App() {
     setActiveTrade(updated);
     setSiblingTrades((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
     loadCalendar();
+    loadAnalytics();
   };
 
+  const accountBalance =
+    (mt5Status?.connected && mt5Status.balance && mt5Status.balance > 0
+      ? mt5Status.balance
+      : settings?.account_balance) || 10000;
+
   return (
-    <div className="min-h-screen bg-[#f6f7fb] text-slate-900">
+    <div className="min-h-screen bg-[#0b0c12] text-slate-100">
       <Header
         version={version}
         activeTab={activeTab}
@@ -191,14 +196,19 @@ export default function App() {
       />
 
       <main className="mx-auto max-w-[1440px] px-4 py-5 sm:px-6">
-        {activeTab === 'calendar' && (
-          <CalendarView
+        {activeTab === 'dashboard' && (
+          <DashboardView
             year={year}
             month={month}
-            data={calendarData}
-            loading={calendarLoading}
+            calendarData={calendarData}
+            calendarLoading={calendarLoading}
+            analyticsData={analyticsData}
+            analyticsLoading={analyticsLoading}
+            accountBalance={accountBalance}
             showWeekly={showWeekly}
             onToggleWeekly={() => setShowWeekly((v) => !v)}
+            onChangeYear={setYear}
+            onChangeMonth={setMonth}
             onPrevMonth={handlePrevMonth}
             onNextMonth={handleNextMonth}
             onThisMonth={handleThisMonth}
@@ -259,8 +269,10 @@ export default function App() {
       {/* Global Toast */}
       {toast && (
         <div
-          className={`fixed right-5 bottom-5 z-[80] max-w-sm rounded-xl px-4 py-3 text-xs font-semibold text-white shadow-lg ${
-            toast.ok ? 'bg-emerald-600' : 'bg-rose-600'
+          className={`fixed right-5 bottom-5 z-[80] max-w-sm rounded-xl border px-4 py-3 text-xs font-semibold text-white shadow-2xl ${
+            toast.ok
+              ? 'border-emerald-500/40 bg-emerald-600/95'
+              : 'border-rose-500/40 bg-rose-600/95'
           }`}
         >
           {toast.text}

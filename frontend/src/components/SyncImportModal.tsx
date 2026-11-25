@@ -43,6 +43,7 @@ export function SyncImportModal({
   const [dailyLoss, setDailyLoss] = useState(500);
   const [maxTrades, setMaxTrades] = useState(8);
   const [maxRisk, setMaxRisk] = useState(250);
+  const [accountBalance, setAccountBalance] = useState(10000);
   const [tzOffset, setTzOffset] = useState(7);
 
   useEffect(() => {
@@ -50,6 +51,7 @@ export function SyncImportModal({
       setDailyLoss(settings.daily_loss_limit);
       setMaxTrades(settings.max_trades_per_day);
       setMaxRisk(settings.max_risk_per_trade);
+      setAccountBalance(settings.account_balance ?? 10000);
       setTzOffset(settings.timezone_offset_hours);
     }
   }, [settings, open]);
@@ -117,10 +119,11 @@ export function SyncImportModal({
         daily_loss_limit: Number(dailyLoss),
         max_trades_per_day: Number(maxTrades),
         max_risk_per_trade: Number(maxRisk),
+        account_balance: Number(accountBalance),
         timezone_offset_hours: Number(tzOffset),
       });
       onSettingsUpdated(updated);
-      setFeedback({ ok: true, text: 'Đã lưu quy tắc quản lý rủi ro & múi giờ.' });
+      setFeedback({ ok: true, text: 'Đã lưu quy tắc quản lý rủi ro, vốn gốc & múi giờ.' });
       onRefreshAll();
     } finally {
       setBusy(false);
@@ -128,43 +131,61 @@ export function SyncImportModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-xs">
-      <div className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs">
+      <div className="w-full max-w-xl overflow-hidden rounded-2xl border border-white/[0.08] bg-[#12131c] text-slate-100 shadow-2xl">
+        <div className="flex items-center justify-between border-b border-white/[0.07] px-5 py-4">
           <div className="flex items-center gap-2">
-            <Database className="h-5 w-5 text-emerald-600" />
-            <h3 className="text-base font-bold text-slate-900">Đồng bộ MT5, Import & Quy tắc</h3>
+            <Database className="h-5 w-5 text-emerald-400" />
+            <h3 className="text-base font-bold text-white">Đồng bộ MT5, Import &amp; Quy tắc</h3>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1 text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-slate-200 px-5">
+        <div className="flex border-b border-white/[0.07] px-5">
           <button
-            onClick={() => { setTab('mt5'); setFeedback(null); }}
-            className={`border-b-2 px-3 py-2.5 text-xs font-semibold ${
-              tab === 'mt5' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500'
+            onClick={() => {
+              setTab('mt5');
+              setFeedback(null);
+            }}
+            className={`border-b-2 px-3 py-2.5 text-xs font-semibold transition ${
+              tab === 'mt5'
+                ? 'border-emerald-400 text-emerald-400'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             Kết nối MT5 trực tiếp
           </button>
           <button
-            onClick={() => { setTab('import'); setFeedback(null); }}
-            className={`border-b-2 px-3 py-2.5 text-xs font-semibold ${
-              tab === 'import' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500'
+            onClick={() => {
+              setTab('import');
+              setFeedback(null);
+            }}
+            className={`border-b-2 px-3 py-2.5 text-xs font-semibold transition ${
+              tab === 'import'
+                ? 'border-emerald-400 text-emerald-400'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             Import file MT5
           </button>
           <button
-            onClick={() => { setTab('rules'); setFeedback(null); }}
-            className={`border-b-2 px-3 py-2.5 text-xs font-semibold ${
-              tab === 'rules' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500'
+            onClick={() => {
+              setTab('rules');
+              setFeedback(null);
+            }}
+            className={`border-b-2 px-3 py-2.5 text-xs font-semibold transition ${
+              tab === 'rules'
+                ? 'border-emerald-400 text-emerald-400'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            Quy tắc kỷ luật (Rule Guardian)
+            Quy tắc kỷ luật &amp; Vốn
           </button>
         </div>
 
@@ -174,23 +195,26 @@ export function SyncImportModal({
               <div
                 className={`flex items-start gap-3 rounded-xl border p-3.5 ${
                   mt5Status?.connected
-                    ? 'border-emerald-200 bg-emerald-50/70'
-                    : 'border-amber-200 bg-amber-50/70'
+                    ? 'border-emerald-500/25 bg-emerald-500/10'
+                    : 'border-amber-500/25 bg-amber-500/10'
                 }`}
               >
                 {mt5Status?.connected ? (
-                  <Wifi className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                  <Wifi className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />
                 ) : (
-                  <WifiOff className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                  <WifiOff className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
                 )}
                 <div className="text-xs">
-                  <div className="font-bold text-slate-900">
-                    {mt5Status?.connected ? `Đã kết nối tài khoản #${mt5Status.account_login}` : 'Chưa phát hiện MT5 đang chạy'}
+                  <div className="font-bold text-white">
+                    {mt5Status?.connected
+                      ? `Đã kết nối tài khoản #${mt5Status.account_login}`
+                      : 'Chưa phát hiện MT5 đang chạy'}
                   </div>
-                  <p className="mt-0.5 text-slate-600">{mt5Status?.message}</p>
+                  <p className="mt-0.5 text-slate-300">{mt5Status?.message}</p>
                   {mt5Status?.connected && (
-                    <p className="mt-1 font-medium text-emerald-800">
-                      Balance: ${mt5Status.balance?.toLocaleString()} {mt5Status.currency} · Equity: ${mt5Status.equity?.toLocaleString()}
+                    <p className="mt-1 font-medium text-emerald-300">
+                      Balance: ${mt5Status.balance?.toLocaleString()} {mt5Status.currency} · Equity: $
+                      {mt5Status.equity?.toLocaleString()}
                     </p>
                   )}
                 </div>
@@ -198,28 +222,30 @@ export function SyncImportModal({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-700">Lấy lịch sử (số ngày gần nhất)</label>
+                  <label className="mb-1 block text-xs font-semibold text-slate-300">
+                    Lấy lịch sử (số ngày gần nhất)
+                  </label>
                   <select
                     value={daysBack}
                     onChange={(e) => setDaysBack(Number(e.target.value))}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-white/[0.08] bg-[#171925] px-3 py-2 text-sm text-slate-200 focus:border-indigo-500 focus:outline-none"
                   >
-                    <option value={7}>7 ngày gần nhất</option>
-                    <option value={30}>30 ngày gần nhất</option>
-                    <option value={90}>90 ngày gần nhất</option>
-                    <option value={180}>6 tháng gần nhất</option>
-                    <option value={365}>1 năm gần nhất</option>
+                    <option value={7} className="bg-[#171925]">7 ngày gần nhất</option>
+                    <option value={30} className="bg-[#171925]">30 ngày gần nhất</option>
+                    <option value={90} className="bg-[#171925]">90 ngày gần nhất</option>
+                    <option value={180} className="bg-[#171925]">6 tháng gần nhất</option>
+                    <option value={365} className="bg-[#171925]">1 năm gần nhất</option>
                   </select>
                 </div>
                 <div className="flex items-end">
-                  <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700">
+                  <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/[0.08] bg-[#171925] px-3 py-2 text-xs font-medium text-slate-300">
                     <input
                       type="checkbox"
                       checked={fetchCandles}
                       onChange={(e) => setFetchCandles(e.target.checked)}
-                      className="rounded border-slate-300"
+                      className="rounded border-slate-600 bg-transparent accent-emerald-500"
                     />
-                    Tải & cache nến M5 + tính MFE/MAE
+                    Tải &amp; cache nến M5 + tính MFE/MAE
                   </label>
                 </div>
               </div>
@@ -227,27 +253,29 @@ export function SyncImportModal({
               <button
                 onClick={handleMt5Sync}
                 disabled={busy}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white shadow-xs transition hover:bg-emerald-700 disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-60"
               >
                 <RefreshCw className={`h-4 w-4 ${busy ? 'animate-spin' : ''}`} />
                 {busy ? 'Đang đồng bộ từ MT5...' : 'Đồng bộ lệnh từ MT5 ngay'}
               </button>
 
-              <div className="border-t border-slate-100 pt-3">
-                <p className="mb-2 text-xs font-semibold text-slate-500">Chế độ trải nghiệm nhanh (Dữ liệu mẫu)</p>
+              <div className="border-t border-white/[0.07] pt-3">
+                <p className="mb-2 text-xs font-semibold text-slate-400">
+                  Chế độ trải nghiệm nhanh (Dữ liệu mẫu)
+                </p>
                 <div className="flex gap-2">
                   <button
                     onClick={handleLoadDemo}
                     disabled={busy}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-white/[0.08] bg-[#171925] py-2 text-xs font-semibold text-slate-200 transition hover:bg-[#1e2131]"
                   >
-                    <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                    <Sparkles className="h-3.5 w-3.5 text-amber-400" />
                     Nạp dữ liệu mẫu T11/2026
                   </button>
                   <button
                     onClick={handleClearDemo}
                     disabled={busy}
-                    className="flex items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100"
+                    className="flex items-center justify-center gap-1.5 rounded-lg border border-rose-500/25 bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-300 transition hover:bg-rose-500/20"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                     Xóa dữ liệu mẫu
@@ -259,31 +287,37 @@ export function SyncImportModal({
 
           {tab === 'import' && (
             <>
-              <div className="rounded-xl bg-slate-50 p-3 text-xs text-slate-600">
-                Trong MT5: mở tab <strong>History (Lịch sử)</strong> → chuột phải → <strong>Report</strong> → chọn <strong>Open XML (MS Office Excel .xlsx)</strong> hoặc <strong>HTML</strong> rồi tải lên đây. Hỗ trợ cả file <strong>.csv</strong>.
+              <div className="rounded-xl border border-white/[0.07] bg-[#171925] p-3 text-xs text-slate-300">
+                Trong MT5: mở tab <strong className="text-white">History (Lịch sử)</strong> → chuột phải →{' '}
+                <strong className="text-white">Report</strong> → chọn{' '}
+                <strong className="text-white">Open XML (MS Office Excel .xlsx)</strong> hoặc{' '}
+                <strong className="text-white">HTML</strong> rồi tải lên đây. Hỗ trợ cả file{' '}
+                <strong className="text-white">.csv</strong>.
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-700">Tên nhãn tài khoản</label>
+                <label className="mb-1 block text-xs font-semibold text-slate-300">Tên nhãn tài khoản</label>
                 <input
                   value={accountLabel}
                   onChange={(e) => setAccountLabel(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-white/[0.08] bg-[#171925] px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none"
                   placeholder="VD: Exness Live / FTMO 100k"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-700">Chọn file báo cáo MT5 (.xlsx, .html, .csv)</label>
+                <label className="mb-1 block text-xs font-semibold text-slate-300">
+                  Chọn file báo cáo MT5 (.xlsx, .html, .csv)
+                </label>
                 <input
                   type="file"
                   accept=".xlsx,.xlsm,.html,.htm,.csv"
                   onChange={(e) => setFile(e.target.files?.[0] || null)}
-                  className="w-full rounded-lg border border-dashed border-slate-300 p-3 text-xs"
+                  className="w-full rounded-lg border border-dashed border-white/15 bg-[#171925] p-3 text-xs text-slate-300 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-600 file:px-2.5 file:py-1 file:text-xs file:font-semibold file:text-white hover:file:bg-indigo-500"
                 />
               </div>
               <button
                 onClick={handleImport}
                 disabled={busy || !file}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-50"
               >
                 <FileUp className="h-4 w-4" />
                 {busy ? 'Đang nhập dữ liệu...' : 'Import lịch sử giao dịch'}
@@ -293,64 +327,85 @@ export function SyncImportModal({
 
           {tab === 'rules' && (
             <>
-              <div className="flex items-start gap-2.5 rounded-xl bg-amber-50/70 p-3 text-xs text-amber-900">
-                <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+              <div className="flex items-start gap-2.5 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-xs text-amber-200">
+                <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
                 <span>
-                  <strong>Rule Guardian</strong> tự động cảnh báo trên lịch và trang Phân tích nếu có ngày vượt giới hạn lỗ hoặc vào quá số lệnh quy định.
+                  <strong className="text-amber-300">Rule Guardian</strong> tự động cảnh báo trên lịch và trang Phân tích nếu có ngày vượt giới hạn lỗ hoặc vào quá số lệnh quy định.
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-700">Lỗ tối đa / ngày (USD)</label>
+                  <label className="mb-1 block text-xs font-semibold text-slate-300">
+                    Lỗ tối đa / ngày (USD)
+                  </label>
                   <input
                     type="number"
                     value={dailyLoss}
                     onChange={(e) => setDailyLoss(Number(e.target.value))}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-white/[0.08] bg-[#171925] px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-700">Số lệnh tối đa / ngày</label>
+                  <label className="mb-1 block text-xs font-semibold text-slate-300">
+                    Số lệnh tối đa / ngày
+                  </label>
                   <input
                     type="number"
                     value={maxTrades}
                     onChange={(e) => setMaxTrades(Number(e.target.value))}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-white/[0.08] bg-[#171925] px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-700">Rủi ro tối đa / lệnh (USD)</label>
+                  <label className="mb-1 block text-xs font-semibold text-slate-300">
+                    Rủi ro tối đa / lệnh (USD)
+                  </label>
                   <input
                     type="number"
                     value={maxRisk}
                     onChange={(e) => setMaxRisk(Number(e.target.value))}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-white/[0.08] bg-[#171925] px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-700">Múi giờ hiển thị (UTC+)</label>
+                  <label className="mb-1 block text-xs font-semibold text-slate-300">
+                    Vốn gốc tính Net Return % (USD)
+                  </label>
+                  <input
+                    type="number"
+                    value={accountBalance}
+                    onChange={(e) => setAccountBalance(Number(e.target.value))}
+                    className="w-full rounded-lg border border-white/[0.08] bg-[#171925] px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="mb-1 block text-xs font-semibold text-slate-300">
+                    Múi giờ hiển thị (UTC+)
+                  </label>
                   <input
                     type="number"
                     value={tzOffset}
                     onChange={(e) => setTzOffset(Number(e.target.value))}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-white/[0.08] bg-[#171925] px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 focus:outline-none"
                   />
                 </div>
               </div>
               <button
                 onClick={handleSaveRules}
                 disabled={busy}
-                className="w-full rounded-xl bg-slate-900 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
+                className="w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500"
               >
-                Lưu quy tắc & cài đặt
+                Lưu quy tắc &amp; cài đặt
               </button>
             </>
           )}
 
           {feedback && (
             <div
-              className={`flex items-start gap-2 rounded-xl p-3 text-xs font-medium ${
-                feedback.ok ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'
+              className={`flex items-start gap-2 rounded-xl border p-3 text-xs font-medium ${
+                feedback.ok
+                  ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300'
+                  : 'border-rose-500/25 bg-rose-500/10 text-rose-300'
               }`}
             >
               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />

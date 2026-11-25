@@ -18,7 +18,7 @@ interface AnalyticsViewProps {
 function EquityCurveChart({ points }: { points: { date: string; equity: number }[] }) {
   if (points.length === 0) {
     return (
-      <div className="flex h-52 items-center justify-center text-xs text-slate-400">
+      <div className="flex h-52 items-center justify-center text-xs text-slate-500">
         Chưa đủ dữ liệu để vẽ đường Equity Curve
       </div>
     );
@@ -49,15 +49,14 @@ function EquityCurveChart({ points }: { points: { date: string; equity: number }
   const lineD = coords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(' ');
   const areaD = `${lineD} L ${coords[coords.length - 1].x.toFixed(1)} ${zeroY.toFixed(1)} L ${coords[0].x.toFixed(1)} ${zeroY.toFixed(1)} Z`;
 
-  const lastEq = points[points.length - 1].equity;
-  const strokeColor = lastEq >= 0 ? '#16a34a' : '#dc2626';
+  const strokeColor = '#818cf8';
 
   return (
     <div className="w-full overflow-x-auto">
       <svg viewBox={`0 0 ${w} ${h}`} className="h-56 w-full min-w-[420px]">
         <defs>
-          <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={strokeColor} stopOpacity="0.25" />
+          <linearGradient id="eqGradDark" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={strokeColor} stopOpacity="0.32" />
             <stop offset="100%" stopColor={strokeColor} stopOpacity="0.02" />
           </linearGradient>
         </defs>
@@ -68,25 +67,32 @@ function EquityCurveChart({ points }: { points: { date: string; equity: number }
           const y = padT + frac * plotH;
           return (
             <g key={frac}>
-              <line x1={padL} x2={w - padR} y1={y} y2={y} stroke="#e2e8f0" strokeDasharray="3 3" />
-              <text x={padL - 8} y={y + 3} textAnchor="end" fontSize="10" fill="#64748b">
-                ${Math.round(val).toLocaleString()}
+              <line
+                x1={padL}
+                x2={w - padR}
+                y1={y}
+                y2={y}
+                stroke="rgba(255,255,255,0.06)"
+                strokeDasharray="3 3"
+              />
+              <text x={padL - 8} y={y + 3} textAnchor="end" fontSize="10" fill="#6b7280">
+                {val < 0 ? `-$${Math.abs(Math.round(val)).toLocaleString()}` : `$${Math.round(val).toLocaleString()}`}
               </text>
             </g>
           );
         })}
 
         {/* Zero line */}
-        <line x1={padL} x2={w - padR} y1={zeroY} y2={zeroY} stroke="#94a3b8" strokeWidth="1" />
+        <line x1={padL} x2={w - padR} y1={zeroY} y2={zeroY} stroke="rgba(148,163,184,0.28)" strokeWidth="1" />
 
         {/* Area & Line */}
-        <path d={areaD} fill="url(#eqGrad)" />
-        <path d={lineD} fill="none" stroke={strokeColor} strokeWidth="2.5" strokeLinejoin="round" />
+        <path d={areaD} fill="url(#eqGradDark)" />
+        <path d={lineD} fill="none" stroke={strokeColor} strokeWidth="2.2" strokeLinejoin="round" />
 
         {/* Data dots */}
         {coords.map((c) => (
           <g key={c.date}>
-            <circle cx={c.x} cy={c.y} r="3.5" fill={strokeColor} stroke="#fff" strokeWidth="1.5">
+            <circle cx={c.x} cy={c.y} r="3" fill={strokeColor} stroke="#12131c" strokeWidth="1.5">
               <title>
                 {c.date}: {formatUSDExact(c.equity)}
               </title>
@@ -104,9 +110,9 @@ function EquityCurveChart({ points }: { points: { date: string; equity: number }
               y={h - 8}
               textAnchor="middle"
               fontSize="10"
-              fill="#64748b"
+              fill="#6b7280"
             >
-              {coords[idx].date.slice(5)}
+              {coords[idx].date.replace(/-/g, '/')}
             </text>
           ))}
       </svg>
@@ -127,13 +133,13 @@ function GroupBarTable({
 }) {
   const maxAbs = Math.max(1, ...items.map((i) => Math.abs(i.net_profit)));
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs">
+    <div className="rounded-2xl border border-white/[0.07] bg-[#12131c] p-5">
       <div className="mb-3">
-        <h3 className="text-sm font-bold text-slate-900">{title}</h3>
+        <h3 className="text-sm font-bold text-slate-100">{title}</h3>
         {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
       </div>
       {items.length === 0 ? (
-        <p className="py-6 text-center text-xs text-slate-400">{emptyText}</p>
+        <p className="py-6 text-center text-xs text-slate-500">{emptyText}</p>
       ) : (
         <div className="space-y-3">
           {items.map((item) => {
@@ -143,16 +149,16 @@ function GroupBarTable({
               <div key={item.name}>
                 <div className="mb-1 flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-slate-800">{item.name}</span>
-                    <span className="text-[11px] text-slate-400">
+                    <span className="font-semibold text-slate-200">{item.name}</span>
+                    <span className="text-[11px] text-slate-500">
                       {item.trades} lệnh · WR {item.winrate}%
                     </span>
                   </div>
-                  <span className={`font-bold ${pos ? 'text-emerald-700' : 'text-rose-600'}`}>
+                  <span className={`font-bold tabular-nums ${pos ? 'text-[#34d399]' : 'text-[#f87171]'}`}>
                     {formatUSDExact(item.net_profit)}
                   </span>
                 </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                <div className="h-2 w-full overflow-hidden rounded-full bg-white/[0.06]">
                   <div
                     className={`h-full rounded-full ${pos ? 'bg-emerald-500' : 'bg-rose-500'}`}
                     style={{ width: `${Math.max(4, pct)}%` }}
@@ -170,7 +176,7 @@ function GroupBarTable({
 export function AnalyticsView({ data, loading }: AnalyticsViewProps) {
   if (loading || !data) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center text-sm text-slate-400">
+      <div className="rounded-2xl border border-white/[0.07] bg-[#12131c] p-12 text-center text-sm text-slate-500">
         Đang tính toán báo cáo phân tích...
       </div>
     );
@@ -179,9 +185,9 @@ export function AnalyticsView({ data, loading }: AnalyticsViewProps) {
   const k = data.kpis;
   if (k.total_trades === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
-        <Activity className="mx-auto h-10 w-10 text-slate-300" />
-        <p className="mt-2 text-sm font-semibold text-slate-700">Chưa có dữ liệu lệnh để phân tích</p>
+      <div className="rounded-2xl border border-dashed border-white/10 bg-[#12131c] p-12 text-center">
+        <Activity className="mx-auto h-10 w-10 text-slate-600" />
+        <p className="mt-2 text-sm font-semibold text-slate-200">Chưa có dữ liệu lệnh để phân tích</p>
         <p className="mt-1 text-xs text-slate-500">Hãy Sync MT5, Import báo cáo hoặc nạp dữ liệu mẫu.</p>
       </div>
     );
@@ -191,80 +197,80 @@ export function AnalyticsView({ data, loading }: AnalyticsViewProps) {
     <div className="space-y-5">
       {/* Top KPI Cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-          <span className="text-[11px] font-semibold text-slate-500">Net P&L</span>
+        <div className="rounded-2xl border border-white/[0.07] bg-[#12131c] p-4">
+          <span className="text-[11px] font-semibold text-slate-400">Net P&amp;L</span>
           <div
-            className={`mt-1 text-xl font-extrabold ${
-              k.net_profit >= 0 ? 'text-emerald-700' : 'text-rose-600'
+            className={`mt-1 text-xl font-extrabold tabular-nums ${
+              k.net_profit >= 0 ? 'text-[#34d399]' : 'text-[#f87171]'
             }`}
           >
             {formatUSDExact(k.net_profit)}
           </div>
-          <span className="text-[11px] text-slate-400">{k.total_trades} lệnh đóng</span>
+          <span className="text-[11px] text-slate-500">{k.total_trades} lệnh đóng</span>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-          <span className="text-[11px] font-semibold text-slate-500">Winrate</span>
-          <div className="mt-1 text-xl font-extrabold text-slate-900">{k.winrate}%</div>
-          <span className="text-[11px] text-slate-400">
+        <div className="rounded-2xl border border-white/[0.07] bg-[#12131c] p-4">
+          <span className="text-[11px] font-semibold text-slate-400">Winrate</span>
+          <div className="mt-1 text-xl font-extrabold text-white tabular-nums">{k.winrate}%</div>
+          <span className="text-[11px] text-slate-500">
             {k.wins ?? 0}W / {k.losses ?? 0}L
           </span>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-          <span className="text-[11px] font-semibold text-slate-500">Profit Factor</span>
-          <div className="mt-1 text-xl font-extrabold text-slate-900">{k.profit_factor}</div>
-          <span className="text-[11px] text-slate-400">
+        <div className="rounded-2xl border border-white/[0.07] bg-[#12131c] p-4">
+          <span className="text-[11px] font-semibold text-slate-400">Profit Factor</span>
+          <div className="mt-1 text-xl font-extrabold text-white tabular-nums">{k.profit_factor}</div>
+          <span className="text-[11px] text-slate-500">
             Kỳ vọng: {formatUSDExact(k.expectancy_usd)}/lệnh
           </span>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-          <span className="text-[11px] font-semibold text-slate-500">Avg Win / Avg Loss</span>
-          <div className="mt-1 flex items-baseline gap-1.5 text-sm font-bold">
-            <span className="text-emerald-700">{formatUSDExact(k.avg_win)}</span>
-            <span className="text-slate-300">/</span>
-            <span className="text-rose-600">{formatUSDExact(k.avg_loss)}</span>
+        <div className="rounded-2xl border border-white/[0.07] bg-[#12131c] p-4">
+          <span className="text-[11px] font-semibold text-slate-400">Avg Win / Avg Loss</span>
+          <div className="mt-1 flex items-baseline gap-1.5 text-sm font-bold tabular-nums">
+            <span className="text-[#34d399]">{formatUSDExact(k.avg_win)}</span>
+            <span className="text-slate-600">/</span>
+            <span className="text-[#f87171]">{formatUSDExact(k.avg_loss)}</span>
           </div>
-          <span className="text-[11px] text-slate-400">
+          <span className="text-[11px] text-slate-500">
             Expectancy R: {k.expectancy_r !== null ? `${k.expectancy_r >= 0 ? '+' : ''}${k.expectancy_r}R` : '—'}
           </span>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-          <span className="text-[11px] font-semibold text-slate-500">Avg MFE / MAE</span>
-          <div className="mt-1 flex items-baseline gap-1.5 text-base font-extrabold">
-            <span className="text-emerald-600">
+        <div className="rounded-2xl border border-white/[0.07] bg-[#12131c] p-4">
+          <span className="text-[11px] font-semibold text-slate-400">Avg MFE / MAE</span>
+          <div className="mt-1 flex items-baseline gap-1.5 text-base font-extrabold tabular-nums">
+            <span className="text-emerald-400">
               {k.avg_mfe_r !== null ? `+${k.avg_mfe_r}R` : '—'}
             </span>
-            <span className="text-slate-300">/</span>
-            <span className="text-rose-500">{k.avg_mae_r !== null ? `${k.avg_mae_r}R` : '—'}</span>
+            <span className="text-slate-600">/</span>
+            <span className="text-rose-400">{k.avg_mae_r !== null ? `${k.avg_mae_r}R` : '—'}</span>
           </div>
-          <span className="text-[11px] text-slate-400">Max DD: -${k.max_drawdown.toLocaleString()}</span>
+          <span className="text-[11px] text-slate-500">Max DD: -${k.max_drawdown.toLocaleString()}</span>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-          <span className="text-[11px] font-semibold text-slate-500">Kỷ luật & Ghi chú</span>
-          <div className="mt-1 text-xl font-extrabold text-amber-600">
+        <div className="rounded-2xl border border-white/[0.07] bg-[#12131c] p-4">
+          <span className="text-[11px] font-semibold text-slate-400">Kỷ luật &amp; Ghi chú</span>
+          <div className="mt-1 text-xl font-extrabold text-amber-400 tabular-nums">
             {k.avg_rating > 0 ? `${k.avg_rating} ★` : '—'}
           </div>
-          <span className="text-[11px] text-slate-400">Đã ghi chú: {k.journaled_pct}% lệnh</span>
+          <span className="text-[11px] text-slate-500">Đã ghi chú: {k.journaled_pct}% lệnh</span>
         </div>
       </div>
 
       {/* Equity Curve + Streaks / Rule Guardian */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs lg:col-span-8">
-          <div className="mb-3 flex items-center justify-between">
+        <div className="rounded-2xl border border-white/[0.07] bg-[#12131c] p-5 lg:col-span-8">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h3 className="text-sm font-bold text-slate-900">Đường tăng trưởng vốn (Equity Curve)</h3>
-              <p className="text-xs text-slate-500">Tổng hợp P&L tích lũy theo từng ngày giao dịch</p>
+              <h3 className="text-sm font-bold text-slate-100">Đường tăng trưởng vốn (Equity Curve)</h3>
+              <p className="text-xs text-slate-500">Tổng hợp P&amp;L tích lũy theo từng ngày giao dịch</p>
             </div>
             <div className="flex items-center gap-3 text-xs">
-              <span className="flex items-center gap-1 font-medium text-emerald-700">
+              <span className="flex items-center gap-1 font-medium text-[#34d399]">
                 <TrendingUp className="h-3.5 w-3.5" /> Best: {formatUSDExact(k.best_trade)}
               </span>
-              <span className="flex items-center gap-1 font-medium text-rose-600">
+              <span className="flex items-center gap-1 font-medium text-[#f87171]">
                 <TrendingDown className="h-3.5 w-3.5" /> Worst: {formatUSDExact(k.worst_trade)}
               </span>
             </div>
@@ -274,42 +280,46 @@ export function AnalyticsView({ data, loading }: AnalyticsViewProps) {
 
         <div className="flex flex-col gap-4 lg:col-span-4">
           {/* Streaks */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs">
-            <h3 className="mb-3 flex items-center gap-1.5 text-sm font-bold text-slate-900">
-              <Flame className="h-4 w-4 text-orange-500" />
-              Chuỗi thắng / thua & Hiệu suất
+          <div className="rounded-2xl border border-white/[0.07] bg-[#12131c] p-5">
+            <h3 className="mb-3 flex items-center gap-1.5 text-sm font-bold text-slate-100">
+              <Flame className="h-4 w-4 text-orange-400" />
+              Chuỗi thắng / thua &amp; Hiệu suất
             </h3>
             <div className="grid grid-cols-2 gap-3 text-center">
-              <div className="rounded-xl bg-emerald-50 p-3">
-                <div className="text-2xl font-extrabold text-emerald-700">{k.max_win_streak}</div>
-                <div className="text-[11px] font-medium text-emerald-800">Chuỗi thắng dài nhất</div>
+              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3">
+                <div className="text-2xl font-extrabold text-[#34d399] tabular-nums">{k.max_win_streak}</div>
+                <div className="text-[11px] font-medium text-emerald-300/80">Chuỗi thắng dài nhất</div>
               </div>
-              <div className="rounded-xl bg-rose-50 p-3">
-                <div className="text-2xl font-extrabold text-rose-700">{k.max_loss_streak}</div>
-                <div className="text-[11px] font-medium text-rose-800">Chuỗi thua dài nhất</div>
+              <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-3">
+                <div className="text-2xl font-extrabold text-[#f87171] tabular-nums">{k.max_loss_streak}</div>
+                <div className="text-[11px] font-medium text-rose-300/80">Chuỗi thua dài nhất</div>
               </div>
             </div>
           </div>
 
           {/* Rule Guardian */}
-          <div className="flex-1 rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs">
-            <h3 className="mb-2 flex items-center gap-1.5 text-sm font-bold text-slate-900">
+          <div className="flex-1 rounded-2xl border border-white/[0.07] bg-[#12131c] p-5">
+            <h3 className="mb-2 flex items-center gap-1.5 text-sm font-bold text-slate-100">
               {data.rule_violations.length === 0 ? (
-                <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                <ShieldCheck className="h-4 w-4 text-emerald-400" />
               ) : (
-                <AlertTriangle className="h-4 w-4 text-amber-500" />
+                <AlertTriangle className="h-4 w-4 text-amber-400" />
               )}
               Rule Guardian (Cảnh báo kỷ luật)
             </h3>
             {data.rule_violations.length === 0 ? (
-              <div className="rounded-xl bg-emerald-50/70 p-3 text-xs text-emerald-800">
+              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs text-emerald-300">
                 Tuyệt vời! Chưa phát hiện ngày nào vi phạm giới hạn lỗ ngày hoặc Overtrading.
               </div>
             ) : (
               <div className="max-h-40 space-y-2 overflow-y-auto">
                 {data.rule_violations.map((v, idx) => (
-                  <div key={idx} className="rounded-lg border border-amber-200 bg-amber-50/70 p-2.5 text-xs text-amber-900">
-                    <span className="font-bold">{v.date.split('-').reverse().join('/')}:</span> {v.message}
+                  <div
+                    key={idx}
+                    className="rounded-lg border border-amber-500/25 bg-amber-500/10 p-2.5 text-xs text-amber-200"
+                  >
+                    <span className="font-bold text-amber-300">{v.date.split('-').reverse().join('/')}:</span>{' '}
+                    {v.message}
                   </div>
                 ))}
               </div>
@@ -361,14 +371,14 @@ export function AnalyticsView({ data, loading }: AnalyticsViewProps) {
 
       {/* MFE / MAE Coaching Note */}
       {k.avg_mfe_r !== null && k.expectancy_r !== null && (
-        <div className="flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50/60 p-4 text-xs text-blue-950">
-          <Award className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+        <div className="flex items-start gap-3 rounded-2xl border border-indigo-500/25 bg-indigo-500/10 p-4 text-xs text-indigo-100">
+          <Award className="mt-0.5 h-5 w-5 shrink-0 text-indigo-400" />
           <div>
-            <div className="font-bold">Gợi ý tối ưu từ dữ liệu MFE / MAE</div>
-            <p className="mt-0.5 text-blue-900">
-              Trung bình các lệnh của bạn đạt độ chạy tối đa <strong>+{k.avg_mfe_r}R</strong> (MFE) và chịu drawdown trung bình{' '}
-              <strong>{k.avg_mae_r}R</strong> (MAE), trong khi kỳ vọng thực nhận là{' '}
-              <strong>{k.expectancy_r >= 0 ? `+${k.expectancy_r}R` : `${k.expectancy_r}R`}</strong>.
+            <div className="font-bold text-indigo-200">Gợi ý tối ưu từ dữ liệu MFE / MAE</div>
+            <p className="mt-0.5 text-indigo-200/80">
+              Trung bình các lệnh của bạn đạt độ chạy tối đa <strong className="text-white">+{k.avg_mfe_r}R</strong> (MFE) và chịu drawdown trung bình{' '}
+              <strong className="text-white">{k.avg_mae_r}R</strong> (MAE), trong khi kỳ vọng thực nhận là{' '}
+              <strong className="text-white">{k.expectancy_r >= 0 ? `+${k.expectancy_r}R` : `${k.expectancy_r}R`}</strong>.
               {k.avg_mfe_r - k.expectancy_r > 0.5
                 ? ' Khoảng cách giữa MFE và R thực nhận khá lớn — bạn có thể thử trailing stop theo cấu trúc M5 để giữ lệnh ăn trọn sóng hơn.'
                 : ' Khả năng tối ưu điểm chốt lời của bạn đang rất sát với biên độ chạy thực tế của thị trường.'}

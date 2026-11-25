@@ -250,6 +250,7 @@ def get_analytics(
                 "journaled_pct": 0,
             },
             "equity_curve": [],
+            "daily_performance": [],
             "by_session": [],
             "by_weekday": [],
             "by_symbol": [],
@@ -291,6 +292,8 @@ def get_analytics(
     max_win_streak = 0
     max_loss_streak = 0
     daily_eq: Dict[str, float] = {}
+    daily_pnl: Dict[str, float] = defaultdict(float)
+    daily_counts: Dict[str, int] = defaultdict(int)
 
     for t in trades:
         p = t["net_profit"]
@@ -310,9 +313,16 @@ def get_analytics(
             cur_win_streak = 0
             max_loss_streak = max(max_loss_streak, cur_loss_streak)
 
-        daily_eq[t["close_date"]] = equity
+        d_key = t["close_date"]
+        daily_eq[d_key] = equity
+        daily_pnl[d_key] = round(daily_pnl[d_key] + p, 2)
+        daily_counts[d_key] += 1
 
     equity_curve = [{"date": d, "equity": eq} for d, eq in sorted(daily_eq.items())]
+    daily_performance = [
+        {"date": d, "pnl": daily_pnl[d], "trades": daily_counts[d]}
+        for d in sorted(daily_pnl.keys())
+    ]
 
     def _agg_group(key_fn) -> List[Dict[str, Any]]:
         buckets: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
@@ -420,6 +430,7 @@ def get_analytics(
             "journaled_pct": journaled_pct,
         },
         "equity_curve": equity_curve,
+        "daily_performance": daily_performance,
         "by_session": by_session,
         "by_weekday": by_weekday,
         "by_symbol": by_symbol,

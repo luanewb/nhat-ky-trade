@@ -148,6 +148,12 @@ export interface AnalyticsGroupItem {
   avg_profit: number;
 }
 
+export interface DailyPerformancePoint {
+  date: string;
+  pnl: number;
+  trades: number;
+}
+
 export interface AnalyticsResponse {
   kpis: {
     total_trades: number;
@@ -171,6 +177,7 @@ export interface AnalyticsResponse {
     journaled_pct: number;
   };
   equity_curve: { date: string; equity: number }[];
+  daily_performance: DailyPerformancePoint[];
   by_session: AnalyticsGroupItem[];
   by_weekday: AnalyticsGroupItem[];
   by_symbol: AnalyticsGroupItem[];
@@ -184,6 +191,7 @@ export interface Settings {
   daily_loss_limit: number;
   max_trades_per_day: number;
   max_risk_per_trade: number;
+  account_balance?: number;
   timezone_offset_hours: number;
   show_weekly_column: boolean;
   setup_tags: string[];
@@ -192,4 +200,4 @@ export interface Settings {
   default_checklist: string[];
 }
 
-export type ActiveTab = 'calendar' | 'analytics' | 'lessons';
+export type ActiveTab = 'dashboard' | 'analytics' | 'lessons';

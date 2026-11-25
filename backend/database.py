@@ -14,8 +14,9 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "daily_loss_limit": 500.0,
     "max_trades_per_day": 8,
     "max_risk_per_trade": 250.0,
+    "account_balance": 10000.0,
     "timezone_offset_hours": 7,
-    "show_weekly_column": True,
+    "show_weekly_column": False,
     "setup_tags": [
         "Breakout",
         "Pullback",

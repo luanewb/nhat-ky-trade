@@ -131,6 +131,16 @@ export function formatUSDExact(val: number, showPlus = true): string {
   return '$0.00';
 }
 
+export function formatDashboardUSD(val: number, trimTrailingZeros = false): string {
+  const abs = Math.abs(val);
+  const formatted = abs.toLocaleString('en-US', {
+    minimumFractionDigits: trimTrailingZeros ? 0 : 2,
+    maximumFractionDigits: 2,
+  });
+  if (val < 0) return `-$${formatted}`;
+  return `$${formatted}`;
+}
+
 export function formatPrice(price: number | null | undefined, symbol = ''): string {
   if (price === null || price === undefined) return '—';
   const sym = symbol.toUpperCase();

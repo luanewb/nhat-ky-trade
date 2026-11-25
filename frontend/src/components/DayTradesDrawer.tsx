@@ -94,45 +94,45 @@ export function DayTradesDrawer({
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex justify-end bg-slate-900/35 backdrop-blur-[2px]">
-      <div className="flex h-full w-full max-w-xl flex-col bg-white shadow-2xl">
+    <div className="fixed inset-0 z-40 flex justify-end bg-black/60 backdrop-blur-[2px]">
+      <div className="flex h-full w-full max-w-xl flex-col border-l border-white/[0.08] bg-[#11131d] text-slate-100 shadow-2xl">
         {/* Drawer Header */}
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+        <div className="flex items-center justify-between border-b border-white/[0.07] px-5 py-4">
           <div>
             <div className="flex items-center gap-2.5">
-              <h3 className="text-lg font-bold text-slate-900">Ngày {displayDate}</h3>
+              <h3 className="text-lg font-bold text-white">Ngày {displayDate}</h3>
               <span
-                className={`rounded-full px-2.5 py-0.5 text-sm font-bold ${
+                className={`rounded-full px-2.5 py-0.5 text-sm font-bold tabular-nums ${
                   totalPnl > 0
-                    ? 'bg-emerald-50 text-emerald-700'
+                    ? 'bg-emerald-500/15 text-[#34d399]'
                     : totalPnl < 0
-                      ? 'bg-rose-50 text-rose-700'
-                      : 'bg-slate-100 text-slate-600'
+                      ? 'bg-rose-500/15 text-[#f87171]'
+                      : 'bg-white/[0.07] text-slate-400'
                 }`}
               >
                 {formatUSDExact(totalPnl)}
               </span>
             </div>
-            <p className="mt-0.5 text-xs text-slate-500">
+            <p className="mt-0.5 text-xs text-slate-400">
               {trades.length} lệnh · {wins} thắng / {trades.length - wins} thua · Click vào từng lệnh để xem Chart Replay
             </p>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Sub-tabs */}
-        <div className="flex border-b border-slate-200 px-5">
+        <div className="flex border-b border-white/[0.07] px-5">
           <button
             onClick={() => setTab('trades')}
             className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-xs font-semibold transition ${
               tab === 'trades'
-                ? 'border-slate-900 text-slate-900'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-indigo-400 text-white'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <CandlestickChart className="h-4 w-4" />
@@ -142,8 +142,8 @@ export function DayTradesDrawer({
             onClick={() => setTab('journal')}
             className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-xs font-semibold transition ${
               tab === 'journal'
-                ? 'border-slate-900 text-slate-900'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-indigo-400 text-white'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <BookOpen className="h-4 w-4" />
@@ -155,13 +155,13 @@ export function DayTradesDrawer({
         <div className="flex-1 overflow-y-auto p-5">
           {tab === 'trades' ? (
             loading ? (
-              <div className="py-12 text-center text-sm text-slate-400">Đang tải danh sách lệnh...</div>
+              <div className="py-12 text-center text-sm text-slate-500">Đang tải danh sách lệnh...</div>
             ) : trades.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center">
-                <p className="text-sm font-medium text-slate-600">Không có lệnh giao dịch nào trong ngày này.</p>
+              <div className="rounded-xl border border-dashed border-white/10 bg-[#161825] p-8 text-center">
+                <p className="text-sm font-medium text-slate-300">Không có lệnh giao dịch nào trong ngày này.</p>
                 <button
                   onClick={() => setTab('journal')}
-                  className="mt-3 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
+                  className="mt-3 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500"
                 >
                   Viết nhật ký ngày nghỉ / quan sát
                 </button>
@@ -174,15 +174,15 @@ export function DayTradesDrawer({
                     <div
                       key={trade.id}
                       onClick={() => onSelectTrade(trade, trades)}
-                      className="group cursor-pointer rounded-xl border border-slate-200 bg-white p-3.5 transition-all hover:border-slate-400 hover:shadow-md"
+                      className="group cursor-pointer rounded-xl border border-white/[0.07] bg-[#161825] p-3.5 transition-all hover:border-indigo-500/40 hover:bg-[#1a1d2d]"
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span
                             className={`inline-flex items-center gap-0.5 rounded-md px-2 py-0.5 text-[11px] font-bold ${
                               trade.direction === 'LONG'
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : 'bg-rose-100 text-rose-800'
+                                ? 'bg-emerald-500/15 text-emerald-400'
+                                : 'bg-rose-500/15 text-rose-400'
                             }`}
                           >
                             {trade.direction === 'LONG' ? (
@@ -192,15 +192,15 @@ export function DayTradesDrawer({
                             )}
                             {trade.direction}
                           </span>
-                          <span className="text-sm font-bold text-slate-900">{trade.symbol}</span>
-                          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-600">
+                          <span className="text-sm font-bold text-white">{trade.symbol}</span>
+                          <span className="rounded bg-white/[0.07] px-1.5 py-0.5 text-[11px] font-medium text-slate-300">
                             {trade.volume} lot
                           </span>
-                          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
+                          <span className="rounded bg-white/[0.05] px-1.5 py-0.5 text-[10px] font-medium text-slate-400">
                             {trade.session}
                           </span>
                           {trade.is_playbook && (
-                            <span className="inline-flex items-center gap-0.5 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+                            <span className="inline-flex items-center gap-0.5 rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-300">
                               <BookmarkCheck className="h-3 w-3" /> A+
                             </span>
                           )}
@@ -208,16 +208,16 @@ export function DayTradesDrawer({
 
                         <div className="text-right">
                           <div
-                            className={`text-sm font-extrabold ${
-                              isWin ? 'text-emerald-700' : 'text-rose-600'
+                            className={`text-sm font-extrabold tabular-nums ${
+                              isWin ? 'text-[#34d399]' : 'text-[#f87171]'
                             }`}
                           >
                             {formatUSDExact(trade.net_profit)}
                           </div>
                           {trade.r_multiple !== null && (
                             <div
-                              className={`text-[11px] font-semibold ${
-                                trade.r_multiple >= 0 ? 'text-emerald-600' : 'text-rose-500'
+                              className={`text-[11px] font-semibold tabular-nums ${
+                                trade.r_multiple >= 0 ? 'text-emerald-400/85' : 'text-rose-400/85'
                               }`}
                             >
                               {trade.r_multiple >= 0 ? `+${trade.r_multiple}R` : `${trade.r_multiple}R`}
@@ -226,11 +226,15 @@ export function DayTradesDrawer({
                         </div>
                       </div>
 
-                      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+                      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
                         <div className="flex items-center gap-2 font-mono text-[11px]">
-                          <span>Entry: <strong className="text-slate-700">{formatPrice(trade.entry_price, trade.symbol)}</strong></span>
+                          <span>
+                            Entry: <strong className="text-slate-200">{formatPrice(trade.entry_price, trade.symbol)}</strong>
+                          </span>
                           <span>→</span>
-                          <span>Exit: <strong className="text-slate-700">{formatPrice(trade.exit_price, trade.symbol)}</strong></span>
+                          <span>
+                            Exit: <strong className="text-slate-200">{formatPrice(trade.exit_price, trade.symbol)}</strong>
+                          </span>
                         </div>
                         <div className="flex items-center gap-1.5 text-[11px]">
                           <Clock className="h-3 w-3" />
@@ -241,38 +245,38 @@ export function DayTradesDrawer({
                       </div>
 
                       {/* MFE / MAE + Tags + Journal preview */}
-                      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2">
+                      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.06] pt-2">
                         <div className="flex flex-wrap items-center gap-1">
                           {trade.setup_tags.map((tg) => (
-                            <span key={tg} className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700">
+                            <span key={tg} className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[10px] font-medium text-sky-300">
                               {tg}
                             </span>
                           ))}
                           {trade.mistake_tags.map((tg) => (
-                            <span key={tg} className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-700">
+                            <span key={tg} className="rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] font-medium text-rose-300">
                               {tg}
                             </span>
                           ))}
                           {!trade.has_journal && (
-                            <span className="text-[11px] italic text-slate-400">Chưa có ghi chú — bấm để review</span>
+                            <span className="text-[11px] italic text-slate-500">Chưa có ghi chú — bấm để review</span>
                           )}
                         </div>
 
                         <div className="flex items-center gap-2">
                           {trade.has_journal && (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400">
                               <NotebookPen className="h-3 w-3" /> Đã ghi chú
                             </span>
                           )}
-                          <span className="rounded-md bg-slate-900 px-2 py-0.5 text-[11px] font-semibold text-white opacity-90 transition group-hover:opacity-100">
+                          <span className="rounded-md bg-indigo-600/90 px-2 py-0.5 text-[11px] font-semibold text-white transition group-hover:bg-indigo-500">
                             Xem Chart →
                           </span>
                         </div>
                       </div>
 
                       {trade.lesson_note && (
-                        <p className="mt-2 line-clamp-2 rounded-lg bg-amber-50/70 px-2.5 py-1.5 text-[11px] text-amber-900">
-                          <strong>Bài học:</strong> {trade.lesson_note}
+                        <p className="mt-2 line-clamp-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-2.5 py-1.5 text-[11px] text-amber-200">
+                          <strong className="text-amber-300">Bài học:</strong> {trade.lesson_note}
                         </p>
                       )}
                     </div>
@@ -283,8 +287,8 @@ export function DayTradesDrawer({
           ) : (
             <div className="space-y-4">
               <div>
-                <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                  Tâm trạng & Năng lượng trong ngày
+                <label className="mb-1.5 block text-xs font-semibold text-slate-300">
+                  Tâm trạng &amp; Năng lượng trong ngày
                 </label>
                 <div className="flex flex-wrap gap-1.5">
                   {MOOD_OPTIONS.map((m) => (
@@ -294,8 +298,8 @@ export function DayTradesDrawer({
                       onClick={() => setJournal({ ...journal, mood: m })}
                       className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
                         journal.mood === m
-                          ? 'border-slate-900 bg-slate-900 text-white'
-                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                          ? 'border-indigo-500 bg-indigo-600 text-white'
+                          : 'border-white/[0.08] bg-[#161825] text-slate-300 hover:bg-[#1e2133]'
                       }`}
                     >
                       {m}
@@ -305,7 +309,7 @@ export function DayTradesDrawer({
               </div>
 
               <div>
-                <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+                <label className="mb-1.5 block text-xs font-semibold text-slate-300">
                   Điểm kỷ luật trong ngày (1–5 sao)
                 </label>
                 <div className="flex items-center gap-1">
@@ -318,7 +322,7 @@ export function DayTradesDrawer({
                     >
                       <Star
                         className={`h-5 w-5 ${
-                          n <= journal.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'
+                          n <= journal.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-600'
                         }`}
                       />
                     </button>
@@ -327,7 +331,7 @@ export function DayTradesDrawer({
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-700">
+                <label className="mb-1 block text-xs font-semibold text-slate-300">
                   Tổng kết diễn biến ngày giao dịch
                 </label>
                 <textarea
@@ -335,12 +339,12 @@ export function DayTradesDrawer({
                   value={journal.summary}
                   onChange={(e) => setJournal({ ...journal, summary: e.target.value })}
                   placeholder="Hôm nay thị trường chạy như thế nào? Mình có tuân thủ kế hoạch phiên không?"
-                  className="w-full rounded-xl border border-slate-200 p-3 text-sm text-slate-800 focus:border-slate-900 focus:outline-none"
+                  className="w-full rounded-xl border border-white/[0.08] bg-[#161825] p-3 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-700">
+                <label className="mb-1 block text-xs font-semibold text-slate-300">
                   Bài học rút ra trong ngày
                 </label>
                 <textarea
@@ -348,31 +352,31 @@ export function DayTradesDrawer({
                   value={journal.lessons}
                   onChange={(e) => setJournal({ ...journal, lessons: e.target.value })}
                   placeholder="Điều gì làm tốt cần phát huy? Sai lầm nào cần tuyệt đối tránh?"
-                  className="w-full rounded-xl border border-slate-200 p-3 text-sm text-slate-800 focus:border-slate-900 focus:outline-none"
+                  className="w-full rounded-xl border border-white/[0.08] bg-[#161825] p-3 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-700">
-                  Lưu ý & Kế hoạch cho ngày mai
+                <label className="mb-1 block text-xs font-semibold text-slate-300">
+                  Lưu ý &amp; Kế hoạch cho ngày mai
                 </label>
                 <textarea
                   rows={3}
                   value={journal.plan_tomorrow}
                   onChange={(e) => setJournal({ ...journal, plan_tomorrow: e.target.value })}
                   placeholder="Khối lượng dự kiến, khung giờ tập trung, vùng giá cần theo dõi..."
-                  className="w-full rounded-xl border border-slate-200 p-3 text-sm text-slate-800 focus:border-slate-900 focus:outline-none"
+                  className="w-full rounded-xl border border-white/[0.08] bg-[#161825] p-3 text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none"
                 />
               </div>
 
               <button
                 onClick={handleSaveJournal}
                 disabled={saving}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-60"
               >
                 {savedToast ? (
                   <>
-                    <Check className="h-4 w-4 text-emerald-400" />
+                    <Check className="h-4 w-4 text-white" />
                     Đã lưu nhật ký ngày!
                   </>
                 ) : saving ? (
